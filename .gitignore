@@ -3,3 +3,4 @@ data/
 test-results/
 .env
 *.log
+artifacts/

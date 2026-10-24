@@ -95,6 +95,8 @@ export async function createServer({
         "/index.html": "index.html",
         "/app.js": "app.js",
         "/style.css": "style.css",
+        "/elite.css": "elite.css",
+        "/skyline.svg": "skyline.svg",
         "/board.js": "../lib/board.js",
         "/favicon.svg": "favicon.svg",
       };

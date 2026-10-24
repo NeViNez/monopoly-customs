@@ -319,6 +319,17 @@ dialog {
 .turn-panel .action-card {
   color: #1c3b31;
 }
+.turn-panel .trade-button,
+.turn-panel > .waiting {
+  color: #d0dec1;
+}
+.turn-panel .trade-button {
+  border-color: #91aa7a;
+  border-radius: 3px;
+}
+.turn-panel .action-card .eyebrow {
+  color: #476b4f;
+}
 .player.active {
   background: #e7efd9;
   border-left-color: #789547;
