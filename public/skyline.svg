@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" fill="none">
+  <defs>
+    <linearGradient id="city" x2="0" y2="1"><stop stop-color="#367f81"/><stop offset="1" stop-color="#0b2635"/></linearGradient>
+    <pattern id="windows" width="24" height="27" patternUnits="userSpaceOnUse"><path d="M8 8h4v9H8z" fill="#b8dba5" opacity=".48"/></pattern>
+  </defs>
+  <path d="M0 400V255h58V180h48v40h42V116h62v284h25V169h58V97h25V40h6v57h25v303h20V211h48V142h59v258h23V95h18V65h6v30h18v305h22V179h48V131h41v269h25V81h17V34h7V0h5v34h7v47h21v319h20V149h63v251h20V205h20V95h48v305h20V174h58v226h22V253h55v147z" fill="url(#city)"/>
+  <path d="M58 400V180h48v220h42V116h62v284h25V169h58v231h25V97h31v303h68V142h59v258h23V95h42v305h22V179h48v221h25V131h41v269h25V81h57v319h20V149h63v251h40V95h48v305h20V174h58v226z" fill="url(#windows)"/>
+  <path d="M0 395h1000" stroke="#a4c97b" stroke-opacity=".3"/>
+</svg>

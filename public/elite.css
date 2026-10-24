@@ -1,0 +1,438 @@
+/* A city-at-night palette inspired by the printed Millionaire Elite edition. */
+:root {
+  --green: #143b32;
+  --red: #b82f39;
+  --muted: #607c70;
+  --line: #cbd9c9;
+  background: #edf1e8;
+  color: #173b35;
+}
+body {
+  background:
+    radial-gradient(ellipse at 85% 30%, #d2dfcc80, transparent 55%), #edf1e8;
+}
+header {
+  max-width: none;
+  height: 108px;
+  background: #102b2b;
+  border-bottom: 3px solid #91ad68;
+  padding-inline: max(28px, calc((100vw - 1484px) / 2));
+}
+.brand {
+  position: relative;
+  color: #f1eee3;
+  font-size: 29px;
+  font-weight: 900;
+  letter-spacing: -0.9px;
+  text-shadow: 2px 2px 0 #a52e38;
+}
+.brand i {
+  font:
+    italic 25px Georgia,
+    serif;
+  color: #c7d7a0;
+  margin-left: 9px;
+  text-shadow: none;
+}
+.brand span {
+  color: #b4c5ad;
+  letter-spacing: 2.2px;
+  font-size: 8px;
+  margin-top: 8px;
+  text-shadow: none;
+}
+header .quiet {
+  color: #edf0e5;
+}
+.status {
+  color: #e7bb82;
+}
+.status.online {
+  color: #bad697;
+}
+main {
+  padding-top: 36px;
+}
+.home {
+  min-height: 680px;
+  gap: 64px;
+  grid-template-columns: 0.88fr 1.2fr;
+}
+.eyebrow {
+  color: #476b4f;
+  letter-spacing: 2px;
+}
+.eyebrow > span {
+  background: #72924c;
+}
+.hero-copy h1 {
+  font:
+    700 clamp(40px, 3.8vw, 62px)/1.06 Georgia,
+    serif;
+  letter-spacing: -2px;
+  margin: 24px 0;
+  color: #132f32;
+}
+.hero-copy h1 em {
+  color: #aa3039;
+}
+.intro {
+  color: #597166;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.entry-card {
+  border-radius: 4px;
+  border: 1px solid #c3d1bb;
+  border-top: 3px solid #7b9854;
+  box-shadow: 0 12px 32px #203a2810;
+  max-width: 460px;
+}
+input,
+select {
+  border-radius: 3px;
+  background: #fcfcf8;
+  border-color: #c8d4c2;
+}
+input:focus,
+select:focus {
+  border-color: #66854e;
+}
+.primary,
+.secondary,
+.dark,
+.danger {
+  border-radius: 3px;
+}
+.primary {
+  background: #b82f39;
+  box-shadow: 0 3px 0 #84262e;
+}
+.primary:hover:not(:disabled) {
+  background: #a12632;
+}
+.secondary {
+  background: #e9efdf;
+  border-color: #c7d4bb;
+}
+.dark {
+  background: #173b35;
+}
+.entry-note,
+.empty {
+  color: #627363;
+}
+.room-list {
+  max-width: 460px;
+}
+.room-item small {
+  color: #687f6e;
+}
+.hero-board:before {
+  background: radial-gradient(ellipse, #a0b58e55, transparent 68%);
+}
+.table-note {
+  color: #59715a;
+  justify-content: center;
+}
+.table-note span {
+  border-color: #afbf9f;
+}
+.board {
+  background: #769949;
+  border: 8px solid #315e33;
+  outline: 1px solid #102b27;
+  border-radius: 2px;
+  box-shadow: 0 24px 50px #19362328;
+}
+.preview-board {
+  transform: rotate(-3deg);
+  box-shadow:
+    9px 12px 0 #193f2b22,
+    0 28px 55px #19362330;
+}
+.board-center {
+  isolation: isolate;
+  border-color: #1c4834;
+  background: radial-gradient(ellipse at 50% 5%, #2f5960, #102d3b 65%, #0a232b);
+  color: #f6f2df;
+}
+.board-center:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("/skyline.svg") center bottom / 140% auto no-repeat;
+  opacity: 0.6;
+}
+.board-center:after {
+  content: "";
+  position: absolute;
+  inset: 1.6cqw;
+  border: 1px solid #b0c38240;
+  pointer-events: none;
+  z-index: -1;
+}
+.edition {
+  color: #c0d0a1;
+  font-size: 1.05cqw;
+  letter-spacing: 0.3cqw;
+  margin-bottom: 2.6cqw;
+}
+.board-logo {
+  background: none;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  transform: none;
+  box-shadow: none;
+  font:
+    900 6.7cqw/0.95 Arial,
+    sans-serif;
+  letter-spacing: -0.35cqw;
+  color: #fff7e7;
+  text-shadow:
+    0.25cqw 0.35cqw 0 #a42e3a,
+    0.4cqw 0.5cqw 0 #641c2d;
+  text-align: center;
+}
+.board-logo i {
+  display: block;
+  color: #d5ddb3;
+  font:
+    italic 5.5cqw/1.1 Georgia,
+    serif;
+  letter-spacing: 0.1cqw;
+  margin-top: 1cqw;
+  text-shadow: 0 2px 0 #0b2431;
+}
+.center-tagline {
+  color: #d2ddc4;
+  font-size: 0.85cqw;
+  margin-top: 2.2cqw;
+}
+.card-decks {
+  gap: 4cqw;
+  margin-top: 3cqw;
+}
+.deck {
+  border: 1px solid #9db586;
+  border-radius: 2px;
+  background: #254e43;
+  color: #d7e6bd;
+  box-shadow: 2px 3px 0 #071e28;
+  height: 8cqw;
+  transform: rotate(-9deg);
+}
+.deck.chance {
+  background: #b83a42;
+  border-color: #e6a398;
+  color: #fff0d3;
+  transform: rotate(9deg);
+}
+.deck span {
+  font-size: 0.8cqw;
+}
+.board-invite {
+  color: #e7edda;
+  margin-top: 3cqw;
+  font-size: 3cqw;
+}
+.board-invite em {
+  color: #bfce91;
+}
+.bank-stock {
+  color: #c2d3b3;
+  font-size: 1.25cqw;
+}
+.bank-stock b {
+  color: #f3e7ac;
+}
+.dice {
+  margin-top: 2cqw;
+  color: #fff5dc;
+}
+.drawn-card {
+  color: #233d32;
+  background: #f8f2db;
+}
+.cell {
+  background: #e9efda;
+  border-color: #426746;
+}
+.cell:hover,
+.cell.selected {
+  background: #fff1be;
+  box-shadow: inset 0 0 0 2px #b04a36;
+}
+.color-band {
+  border-color: #426746;
+  height: 25%;
+}
+.cell-name {
+  font-weight: 800;
+}
+.cell-price {
+  color: #29492f;
+  font-weight: 650;
+}
+.cell.corner {
+  background: #94b964;
+}
+.cell.chance {
+  background: #f5ded8;
+}
+.cell.chest {
+  background: #dce7be;
+}
+.cell.chance .cell-symbol {
+  color: #ae3340;
+}
+.cell.chest .cell-symbol {
+  color: #486b31;
+}
+.lobby-main {
+  background: #e1e9d6;
+  border-color: #bdcfae;
+  border-radius: 4px;
+}
+.seat,
+.panel,
+.detail-panel,
+.players-panel,
+.turn-panel,
+dialog {
+  border-radius: 4px;
+}
+.turn-panel {
+  background: #173b35;
+  border: 1px solid #284f3f;
+  color: #f3f2df;
+  border-top: 3px solid #a2b96d;
+}
+.turn-panel .eyebrow {
+  color: #c3d89d;
+}
+.turn-panel .hint {
+  color: #c0d0ba;
+}
+.turn-panel .action-card {
+  color: #1c3b31;
+}
+.player.active {
+  background: #e7efd9;
+  border-left-color: #789547;
+}
+.muted,
+.hint,
+.seat > span,
+.lobby-facts span,
+.empty {
+  color: #61745b;
+}
+.lobby-facts b {
+  color: #294b32;
+}
+.code {
+  color: #4d6a4d;
+}
+.tabs button {
+  color: #62785b;
+}
+footer {
+  color: #5d735e;
+}
+dialog::backdrop {
+  background: #061e25ba;
+  backdrop-filter: blur(4px);
+}
+@media (min-width: 1500px) {
+  .home {
+    gap: 80px;
+  }
+}
+@media (max-width: 1100px) {
+  .home {
+    gap: 35px;
+    grid-template-columns: 0.9fr 1fr;
+  }
+  .brand {
+    font-size: 26px;
+  }
+}
+@media (max-width: 800px) {
+  header {
+    height: 88px;
+    padding: 0 20px;
+  }
+  .brand {
+    font-size: 23px;
+  }
+  .brand i {
+    font-size: 22px;
+  }
+  .brand span {
+    font-size: 7px;
+    letter-spacing: 1.3px;
+  }
+  .home {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    min-height: auto;
+  }
+  .hero-copy h1 {
+    font-size: 47px;
+  }
+  .hero-copy,
+  .hero-board {
+    width: 100%;
+    max-width: 580px;
+    margin-inline: auto;
+  }
+  .entry-card,
+  .room-list {
+    max-width: none;
+  }
+  .hero-board {
+    padding: 14px 6px;
+  }
+  .board {
+    border-width: 5px;
+  }
+  .entry-actions {
+    flex-direction: row;
+  }
+}
+@media (max-width: 480px) {
+  header {
+    padding-inline: 16px;
+  }
+  .brand {
+    font-size: 19px;
+  }
+  .brand i {
+    font-size: 20px;
+    margin-left: 5px;
+  }
+  .brand span {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .hero-copy h1 {
+    font-size: 41px;
+  }
+  .header-right {
+    gap: 3px;
+  }
+  .header-right .quiet {
+    font-size: 11px;
+    padding-inline: 4px;
+  }
+  .status {
+    font-size: 9px;
+  }
+  .table-note {
+    font-size: 9px;
+    gap: 10px;
+  }
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#102b2b" />
+    <meta
+      name="description"
+      content="Классическая настольная игра — за одним столом, где бы вы ни были."
+    />
+    <title>Миллионер · Elite — игра с друзьями</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/elite.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/" aria-label="Миллионер Elite — главная"
+        >МИЛЛИОНЕР<i>Elite</i><span>БОЛЬШАЯ ИГРА В ВАШЕЙ КОМПАНИИ</span></a
+      >
+      <div class="header-right">
+        <span id="connection" class="status">Подключаемся…</span
+        ><button id="rulesButton" class="quiet">Правила ↗</button>
+      </div>
+    </header>
+    <main id="app"><p class="loading">Раскладываем игровое поле…</p></main>
+    <div id="toast" role="alert"></div>
+    <dialog id="modal">
+      <button id="closeModal" class="close" aria-label="Закрыть">×</button>
+      <div id="modalBody"></div>
+    </dialog>
+    <footer>
+      Большие планы. Смелые сделки. Ваш город.
+      <span>Для друзей · оформление по мотивам «Миллионер Elite»</span>
+    </footer>
+  </body>
+</html>

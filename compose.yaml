@@ -1,0 +1,13 @@
+services:
+  monopoly:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - monopoly-data:/app/data
+    environment:
+      NODE_ENV: production
+      # PUBLIC_ORIGIN: https://monopoly.example.com
+volumes:
+  monopoly-data:
