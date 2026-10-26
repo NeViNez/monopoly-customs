@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { WebSocket } from "ws";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "../server.js";
+import { createGame, act } from "../lib/game.js";
 async function client(port) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
   const queue = [];
@@ -37,6 +38,56 @@ async function client(port) {
     },
   };
 }
+test("autoplay completes purchases and keeps playing later turns without toggling", async (t) => {
+  const dataDir = await mkdtemp(join(tmpdir(), "monopoly-autoplay-"));
+  const app = await createServer({ dataDir });
+  t.after(async () => {
+    if (app.server.listening) await app.close();
+    await rm(dataDir, { recursive: true, force: true });
+  });
+  await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+  const port = app.server.address().port;
+  const a = await client(port),
+    b = await client(port);
+  a.send({ type: "create", name: "Автопилот" });
+  const { code } = await a.get("session");
+  const { you: aid } = await a.get("room");
+  b.send({ type: "join", name: "Соперник", code });
+  const { you: bid } = await b.get("room");
+  const room = app.rooms.get(code);
+  room.game = createGame(room.players, { shuffle: false });
+  act(room.game, aid, { type: "roll" }, () => [1, 2]);
+
+  a.send({ type: "autoplay", enabled: true });
+  const first = (await a.get("room", (m) => !!m.room.game)).room.game;
+  assert.equal(first.properties[3].owner, aid);
+  assert.equal(first.pending, null);
+  assert.equal(
+    first.players[first.turn].id,
+    bid,
+    "autoplay must finish the whole turn",
+  );
+
+  // A jailed player gets one roll regardless of doubles, keeping this check deterministic.
+  room.game.players[0].jail = true;
+  room.game.players[0].position = 10;
+  room.game.phase = "end";
+  b.send({ type: "action", action: { type: "end" } });
+  const second = (
+    await a.get("room", (m) => m.room.game?.rollCount > first.rollCount)
+  ).room.game;
+  assert.equal(second.players[second.turn].id, bid);
+  assert.equal(second.pending, null);
+  assert.equal(second.players[0].autoplay, true);
+
+  await app.close();
+  const [saved] = JSON.parse(
+    await readFile(join(dataDir, "rooms.json"), "utf8"),
+  );
+  const { decks, ...savedGame } = saved.game;
+  assert.deepEqual(savedGame, second);
+});
+
 test("two clients share game, reject forged turns, reconnect and restore after restart", async (t) => {
   const dataDir = await mkdtemp(join(tmpdir(), "monopoly-test-"));
   let app = await createServer({ dataDir });

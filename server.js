@@ -78,9 +78,9 @@ export async function createServer({
     }
   };
   const autoplay = (r) => {
-    const g = r.game;
-    if (!g || g.winner) return;
     for (let step = 0; step < 20; step++) {
+      const g = r.game;
+      if (!g || g.winner) return;
       const pending = g.pending;
       let p = g.players[g.turn];
       if (pending?.type === "auction" || pending?.type === "buildingAuction") {
@@ -336,8 +336,8 @@ export async function createServer({
             if (gp) gp.autoplay = p.autoplay;
           }
         } else throw Error("Неизвестная команда");
-        save();
         autoplay(r);
+        save();
         broadcast();
       } catch (e) {
         send(ws, { type: "error", message: e.message });
