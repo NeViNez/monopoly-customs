@@ -1,4 +1,6 @@
 import { board } from "./board.js";
+import { figures } from "./figures.js";
+import { capturePieces, animatePieces } from "./pieces.js";
 const $ = (s) => document.querySelector(s),
   app = $("#app");
 const escape = (s) =>
@@ -21,9 +23,13 @@ const palette = [
   "#697780",
   "#bd6f30",
 ];
-const tokens = ["🎩", "🚗", "🚢", "🐕", "🐈", "🦆", "👢", "🛒"];
+const figureHTML = (p) => {
+  const f = figures[p.figure ?? p.color];
+  return `<span class="figure-image"><img src="${f.image}" alt="${f.name}" draggable="false"></span>`;
+};
 let ws,
   room = null,
+  diceRollStarted = null,
   you = null,
   rooms = [],
   connected = false,
@@ -84,6 +90,7 @@ function toast(s) {
   toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 5000);
 }
 function connect() {
+  let initialRoom = true;
   ws = new WebSocket(
     `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
   );
@@ -104,6 +111,13 @@ function connect() {
       sessionStorage.setItem("monopoly-session", JSON.stringify(session));
     }
     if (m.type === "room") {
+      const previous = room?.game?.rollCount ?? 0;
+      const next = m.room.game?.rollCount ?? 0;
+      if (!initialRoom && room?.code === m.room.code && next > previous)
+        diceRollStarted = performance.now();
+      else if (initialRoom || next < previous || room?.code !== m.room.code)
+        diceRollStarted = null;
+      initialRoom = false;
       room = m.room;
       you = m.you;
       rememberSession();
@@ -114,6 +128,7 @@ function connect() {
       session = null;
       sessionStorage.removeItem("monopoly-session");
       room = null;
+      diceRollStarted = null;
       render();
     }
     if (m.type === "replaced") {
@@ -149,24 +164,38 @@ const symbol = (b) =>
     parking: "🚘",
     gotojail: "↙",
   })[b.type] || "";
+function piecesHTML(players) {
+  return players.length
+    ? `<span class="pieces">${players.map((p) => `<i data-player="${escape(p.id)}" title="${escape(p.name)}" style="background:${palette[p.color]}">${figureHTML(p)}</i>`).join("")}</span>`
+    : "";
+}
 function boardHTML(g, preview = false) {
-  return `<div class="board ${preview ? "preview-board" : ""}"><div class="board-center"><div class="edition">ЭКОНОМИЧЕСКАЯ ИГРА ДЛЯ ДРУЗЕЙ</div><div class="board-logo">МИЛЛИОНЕР<i>Elite</i></div><div class="center-tagline">ПОКУПАЙТЕ. ТОРГУЙТЕСЬ. ПОБЕЖДАЙТЕ.</div><div class="card-decks"><div class="deck chest">▣<span>ОБЩЕСТВЕННАЯ<br>КАЗНА</span></div><div class="deck chance">?<span>ШАНС</span></div></div>${g ? `<div class="dice" aria-label="Кубики: ${g.dice.join(" и ")}"><span>${"⚀⚁⚂⚃⚄⚅"[g.dice[0] - 1]}</span><span>${"⚀⚁⚂⚃⚄⚅"[g.dice[1] - 1]}</span></div><div class="bank-stock">БАНК <b>⌂ ${g.bank.houses}</b> домов <b>▥ ${g.bank.hotels}</b> отелей</div>${g.lastCard ? `<div class="drawn-card">${escape(g.lastCard.text)}</div>` : ""}` : `<div class="board-invite">Город возможностей.<br><em>Ваш следующий ход.</em></div>`}</div>${board
+  const elapsed =
+    diceRollStarted === null ? 850 : performance.now() - diceRollStarted;
+  const rolling = elapsed < 850;
+  return `<div class="board ${preview ? "preview-board" : ""}"><div class="board-center"><div class="edition">ЭКОНОМИЧЕСКАЯ ИГРА ДЛЯ ДРУЗЕЙ</div><div class="board-logo">МИЛЛИОНЕР<i>Elite</i></div><div class="center-tagline">ПОКУПАЙТЕ. ТОРГУЙТЕСЬ. ПОБЕЖДАЙТЕ.</div><div class="card-decks"><div class="deck chest">▣<span>ОБЩЕСТВЕННАЯ<br>КАЗНА</span></div><div class="deck chance">?<span>ШАНС</span></div></div>${g ? `<div class="dice${rolling ? " rolling" : ""}" style="--roll-delay:-${elapsed}ms" role="img" aria-live="polite" aria-label="Кубики: ${g.dice.join(" и ")}"><span>${"⚀⚁⚂⚃⚄⚅"[g.dice[0] - 1]}</span><span>${"⚀⚁⚂⚃⚄⚅"[g.dice[1] - 1]}</span></div><div class="bank-stock">БАНК <b>⌂ ${g.bank.houses}</b> домов <b>▥ ${g.bank.hotels}</b> отелей</div>${g.lastCard ? `<div class="drawn-card">${escape(g.lastCard.text)}</div>` : ""}` : `<div class="board-invite">Город возможностей.<br><em>Ваш следующий ход.</em></div>`}</div>${board
     .map((b) => {
       const [row, col] = cellPosition(b.index),
         s = g?.properties[b.index],
         owner = g?.players.find((p) => p.id === s?.owner),
         players =
           g?.players.filter((p) => !p.bankrupt && p.position === b.index) || [];
-      return `<button class="cell ${b.index % 10 === 0 ? "corner" : ""} ${b.type} ${selected === b.index ? "selected" : ""} ${s?.mortgaged ? "mortgaged" : ""}" style="grid-row:${row};grid-column:${col};${owner ? "--owner:" + palette[owner.color] + ";" : ""}" data-cell="${b.index}" aria-label="${escape(b.name)}${b.price ? ", цена " + b.price : ""}">${b.type === "street" ? `<div class="color-band" style="background:${b.color}">${s?.level ? (s.level === 5 ? "▥" : "⌂".repeat(s.level)) : ""}</div>` : `<span class="cell-symbol">${symbol(b)}</span>`}<span class="cell-name">${escape(b.name)}</span>${b.price ? `<span class="cell-price">${b.price} ₩</span>` : ""}${owner ? '<i class="owner-dot"></i>' : ""}${players.length ? `<span class="pieces">${players.map((p) => `<i title="${escape(p.name)}" style="background:${palette[p.color]}">${tokens[p.color]}</i>`).join("")}</span>` : ""}</button>`;
+      return `<button class="cell ${b.index % 10 === 0 ? "corner" : ""} ${b.type} ${selected === b.index ? "selected" : ""} ${s?.mortgaged ? "mortgaged" : ""}" style="grid-row:${row};grid-column:${col};${owner ? "--owner:" + palette[owner.color] + ";" : ""}" data-cell="${b.index}" aria-label="${escape(b.name)}${b.price ? ", цена " + b.price : ""}">${b.type === "jail" ? [true, false].map((jailed) => `<span class="jail-zone ${jailed ? "inmates" : "visitors"}"><span class="jail-label">${jailed ? "Тюрьма" : "Посещение"}</span>${piecesHTML(players.filter((p) => Boolean(p.jail) === jailed))}</span>`).join("") : b.type === "street" ? `<div class="color-band" style="background:${b.color}">${s?.level ? (s.level === 5 ? "▥" : "⌂".repeat(s.level)) : ""}</div>` : `<span class="cell-symbol">${symbol(b)}</span>`}${b.type !== "jail" ? `<span class="cell-name">${escape(b.name)}</span>` : ""}${b.price ? `<span class="cell-price">${b.price} ₩</span>` : ""}${owner ? '<i class="owner-dot"></i>' : ""}${b.type !== "jail" ? piecesHTML(players) : ""}</button>`;
     })
     .join("")}</div>`;
 }
 function render() {
+  const positions = capturePieces(app);
   const focus = document.activeElement?.id;
   const value = focus && document.activeElement.value;
   const start = document.activeElement?.selectionStart;
   app.innerHTML = room ? (room.game ? gameHTML() : lobbyHTML()) : homeHTML();
   bind();
+  animatePieces(
+    app,
+    positions,
+    matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   if (focus && document.getElementById(focus)) {
     const el = document.getElementById(focus);
     if (value !== undefined) el.value = value;
@@ -194,17 +223,21 @@ function homeHTML() {
 function roomHeader() {
   return `<div class="room-heading"><div><div class="eyebrow">ВАШ ИГРОВОЙ СТОЛ</div><h1>${escape(room.name)}</h1></div><div class="room-tools"><button id="copy" class="secondary">Пригласить друзей ↗</button><span class="code">${room.code}</span>${!room.game || room.game.winner ? '<button id="leave" class="quiet">Выйти</button>' : ""}</div></div>`;
 }
+function figurePickerHTML() {
+  const me = room.players.find((p) => p.id === you);
+  return `<fieldset class="figure-picker"><legend>Ваша мем-фигурка</legend><div class="figure-options">${figures.map((f, i) => `<button type="button" data-figure="${i}" aria-pressed="${(me.figure ?? me.color) === i}" title="${f.name}">${figureHTML({ figure: i })}<span class="figure-name">${f.name}</span></button>`).join("")}</div></fieldset>`;
+}
 function lobbyHTML() {
-  return `${roomHeader()}<section class="lobby"><div class="lobby-main"><div class="eyebrow">СОБИРАЕМ КОМПАНИЮ</div><h2>Большая игра начинается<br>с хороших друзей.</h2><p class="muted">Отправьте ссылку друзьям. Когда все будут на месте, начинайте.</p><div class="seats">${room.players.map((p) => `<div class="seat"><div class="avatar" style="--p:${palette[p.color]}">${tokens[p.color]}</div><strong>${escape(p.name)}${p.id === you ? " <small>это вы</small>" : ""}</strong><span>${p.id === room.host ? "Создатель комнаты" : p.online ? "Готов к игре" : "Не в сети"}</span></div>`).join("")}${Array.from({ length: Math.max(0, 4 - room.players.length) }, () => '<div class="seat vacant"><div class="avatar">+</div><span>Место для друга</span></div>').join("")}</div>${room.host === you ? `<button id="start" class="primary" ${room.players.length < 2 ? "disabled" : ""}>Начать игру · ${room.players.length} игроков →</button>` : '<p class="waiting">Ждём, пока создатель комнаты начнёт игру…</p>'}<div class="lobby-facts"><span><b>1 500 ₩</b>стартовый капитал</span><span><b>40 клеток</b>классическое поле</span><span><b>Без паролей</b>только ваши никнеймы</span></div></div><aside class="panel"><h3>За столом</h3>${chatHTML()}</aside></section>`;
+  return `${roomHeader()}<section class="lobby"><div class="lobby-main"><div class="eyebrow">СОБИРАЕМ КОМПАНИЮ</div><h2>Большая игра начинается<br>с хороших друзей.</h2><p class="muted">Отправьте ссылку друзьям. Когда все будут на месте, начинайте.</p><div class="seats">${room.players.map((p) => `<div class="seat"><div class="avatar" style="--p:${palette[p.color]}">${figureHTML(p)}</div><strong>${escape(p.name)}${p.id === you ? " <small>это вы</small>" : ""}</strong><span>${p.id === room.host ? "Создатель комнаты" : p.online ? "Готов к игре" : "Не в сети"}</span></div>`).join("")}${Array.from({ length: Math.max(0, 4 - room.players.length) }, () => '<div class="seat vacant"><div class="avatar">+</div><span>Место для друга</span></div>').join("")}</div>${figurePickerHTML()}${room.host === you ? `<button id="start" class="primary" ${room.players.length < 2 ? "disabled" : ""}>Начать игру · ${room.players.length} игроков →</button>` : '<p class="waiting">Ждём, пока создатель комнаты начнёт игру…</p>'}<div class="lobby-facts"><span><b>1 500 ₩</b>стартовый капитал</span><span><b>40 клеток</b>классическое поле</span><span><b>Без паролей</b>только ваши никнеймы</span></div></div><aside class="panel"><h3>За столом</h3>${chatHTML()}</aside></section>`;
 }
 function gameHTML() {
   const g = room.game,
     me = g.players.find((p) => p.id === you),
     current = g.players[g.turn];
-  return `${roomHeader()}<section class="game-layout"><div class="board-wrap">${boardHTML(g)}</div><aside class="game-sidebar"><div class="turn-panel"><div class="eyebrow">${g.winner ? "ИГРА ЗАВЕРШЕНА" : current.id === you ? "ВАШ ХОД" : "СЕЙЧАС ХОДИТ"}</div><h2>${g.winner ? "🏆 " + escape(g.players.find((p) => p.id === g.winner).name) : tokens[current.color] + " " + escape(current.name)}</h2>${controls(g, me)}<p class="hint">${g.winner ? "Поздравляем победителя! Время для реванша?" : me.bankrupt ? "Вы выбыли. Можно следить за игрой и общаться." : g.pending ? "Завершите действие, чтобы продолжить игру." : g.phase === "roll" ? "Бросьте два кубика и сделайте свой ход." : "Управляйте собственностью или завершите ход."}</p></div><div class="players-panel">${g.players
+  return `${roomHeader()}<section class="game-layout"><div class="board-wrap">${boardHTML(g)}</div><aside class="game-sidebar"><div class="turn-panel"><div class="eyebrow">${g.winner ? "ИГРА ЗАВЕРШЕНА" : current.id === you ? "ВАШ ХОД" : "СЕЙЧАС ХОДИТ"}</div><h2>${g.winner ? "🏆 " + escape(g.players.find((p) => p.id === g.winner).name) : figureHTML(current) + " " + escape(current.name)}</h2>${controls(g, me)}<p class="hint">${g.winner ? "Поздравляем победителя! Время для реванша?" : me.bankrupt ? "Вы выбыли. Можно следить за игрой и общаться." : g.pending ? "Завершите действие, чтобы продолжить игру." : g.phase === "roll" ? "Бросьте два кубика и сделайте свой ход." : "Управляйте собственностью или завершите ход."}</p></div><div class="players-panel">${g.players
     .map(
       (p) =>
-        `<div class="player ${p.id === current.id && !g.winner ? "active" : ""} ${p.bankrupt ? "out" : ""}"><div class="player-token" style="background:${palette[p.color]}">${tokens[p.color]}</div><div class="player-name">${escape(p.name)}${p.id === you ? "<small>это вы</small>" : ""}<div class="property-stripes">${board
+        `<div class="player ${p.id === current.id && !g.winner ? "active" : ""} ${p.bankrupt ? "out" : ""}"><div class="player-token" style="background:${palette[p.color]}">${figureHTML(p)}</div><div class="player-name">${escape(p.name)}${p.id === you ? "<small>это вы</small>" : ""}<div class="property-stripes">${board
           .filter((b) => g.properties[b.index]?.owner === p.id)
           .map((b) => `<i style="background:${b.color || "#57676b"}"></i>`)
           .join(
@@ -271,6 +304,8 @@ function controls(g, me) {
   if (!me.bankrupt && (!p || p.type === "debt"))
     html +=
       '<button id="trade" class="trade-button">⇄ Предложить обмен</button>';
+  if (!me.bankrupt)
+    html += `<button id="autoplay" class="secondary" aria-pressed="${!!me.autoplay}">Автопилот: ${me.autoplay ? "включён" : "выключен"}</button>`;
   if (g.trade) {
     const t = g.trade;
     html += `<div class="action-card"><strong>Предложение обмена</strong><p>${escape(g.players.find((p) => p.id === t.from).name)} → ${escape(g.players.find((p) => p.id === t.to).name)}</p><p>Отдаёт: ${tradeSummary(t.give, t.giveMoney, t.giveCard)}<br>Просит: ${tradeSummary(t.take, t.takeMoney, t.takeCard)}</p>${t.to === you ? '<button data-action="acceptTrade" class="primary">Принять обмен</button>' : ""}${[t.from, t.to].includes(you) ? '<button data-action="cancelTrade" class="secondary">Отклонить / отменить</button>' : ""}</div>`;
@@ -381,6 +416,10 @@ function bind() {
         (el.onclick = () =>
           send({ type: "join", name: name(), code: el.dataset.join })),
     );
+  document.querySelectorAll("[data-figure]").forEach((el) => {
+    el.onclick = () =>
+      send({ type: "figure", figure: Number(el.dataset.figure) });
+  });
   on("start", "click", () => send({ type: "start" }));
   on("leave", "click", () => send({ type: "leave" }));
   on("rematch", "click", () => send({ type: "rematch" }));
@@ -428,6 +467,9 @@ function bind() {
     action("bid", { amount: Number($("#bidAmount").value) }),
   );
   on("trade", "click", showTrade);
+  on("autoplay", "click", () =>
+    send({ type: "autoplay", enabled: !room.game.players.find((p) => p.id === you).autoplay }),
+  );
   on("redeemMortgage", "click", () =>
     action("mortgageChoice", { redeem: true }),
   );

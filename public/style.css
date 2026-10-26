@@ -505,9 +505,11 @@ footer {
 }
 .pieces i {
   font-style: normal;
-  font-size: 1.8cqw;
-  width: 2.8cqw;
-  height: 2.8cqw;
+  font-size: 2.6cqw;
+  width: 4cqw;
+  height: 4cqw;
+  padding: 2px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   border: 1.5px solid white;
@@ -1308,4 +1310,188 @@ dialog p {
   dialog {
     padding: 28px 20px;
   }
+}
+
+.dice span {
+  display: inline-block;
+  transform-origin: center;
+}
+.dice.rolling span {
+  animation: dice-tumble 850ms ease-out both;
+  animation-delay: var(--roll-delay);
+}
+.dice.rolling span:nth-child(2) {
+  animation-name: dice-tumble-second;
+}
+@keyframes dice-tumble {
+  0% {
+    transform: translate(-2cqw, -5cqw) rotate(-220deg) scale(0.65);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translate(1cqw, 0) rotate(35deg) scale(1.12);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(-0.5cqw, -2cqw) rotate(-30deg);
+  }
+  78% {
+    transform: translate(0, 0) rotate(12deg);
+  }
+  90% {
+    transform: translate(0, -0.6cqw) rotate(-5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+}
+@keyframes dice-tumble-second {
+  0% {
+    transform: translate(2cqw, -6cqw) rotate(250deg) scale(0.65);
+    opacity: 0.4;
+  }
+  35% {
+    transform: translate(-1cqw, 0) rotate(-45deg) scale(1.12);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(0.5cqw, -2.5cqw) rotate(25deg);
+  }
+  80% {
+    transform: translate(0, 0) rotate(-15deg);
+  }
+  92% {
+    transform: translate(0, -0.4cqw) rotate(5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice.rolling span {
+    animation: none;
+  }
+}
+
+/* Moving pieces must stay visible outside their destination cell. */
+.cell.piece-moving {
+  overflow: visible;
+  z-index: 5;
+}
+
+.figure-image {
+  display: inline-block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.turn-panel h2 .figure-image {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.figure-picker {
+  border: 0;
+  padding: 0;
+  margin: 0 0 28px;
+  min-width: 0;
+}
+.figure-picker legend {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.figure-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.figure-options button {
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #e9efda;
+  color: #233d32;
+}
+.figure-options button[aria-pressed="true"] {
+  border-color: #b04a36;
+  background: #fff1be;
+}
+.figure-options .figure-image {
+  width: 64px;
+  height: 64px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.figure-options .figure-name {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .figure-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.figure-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.figure-image img[src="/memes/0.jpg"] {
+  transform: scale(1.5);
+  transform-origin: right center;
+}
+.figure-image img[src="/memes/1.jpg"] {
+  transform: scale(2.8);
+  transform-origin: 70% 68%;
+}
+.figure-image img[src="/memes/5.jpg"] {
+  transform: scale(1.8);
+  transform-origin: left bottom;
+}
+.figure-image img[src="/memes/6.jpg"] {
+  transform: scale(1.65);
+  transform-origin: center bottom;
+}
+
+.cell.jail {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+}
+.jail-zone {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.jail-zone.inmates {
+  background: #e5b17b;
+  border-bottom: 1px solid #344b38;
+}
+.jail-label {
+  display: block;
+  font-size: 0.95cqw;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding-top: 0.15cqw;
+}
+.jail-zone .pieces {
+  display: grid;
+  grid-template-columns: repeat(4, 1.65cqw);
+  gap: 0.1cqw;
+  bottom: 0.15cqw;
+}
+.jail-zone .pieces i {
+  width: 1.65cqw;
+  height: 1.65cqw;
+  padding: 0;
+  border-width: 1px;
 }

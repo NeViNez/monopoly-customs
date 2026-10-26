@@ -57,11 +57,30 @@ test("two clients share game, reject forged turns, reconnect and restore after r
   const br = await b.get("room");
   assert.equal(br.room.players.length, 2);
   assert.notEqual(br.you, first.you);
+  b.send({ type: "figure", figure: 6 });
+  const chosen = await b.get(
+    "room",
+    (m) => m.room.players.find((p) => p.id === br.you)?.figure === 6,
+  );
+  assert.equal(
+    chosen.room.players.find((p) => p.id === first.you).figure,
+    undefined,
+  );
+  b.send({ type: "figure", figure: -1 });
+  assert.match((await b.get("error")).message, /фигурк/);
+  b.send({ type: "figure", figure: 1.5 });
+  assert.match((await b.get("error")).message, /фигурк/);
   b.send({ type: "start" });
   assert.match((await b.get("error")).message, /создатель/);
   a.send({ type: "start" });
   const started = await a.get("room", (m) => !!m.room.game);
   assert.equal(started.room.game.players.length, 2);
+  assert.equal(
+    started.room.game.players.find((p) => p.id === br.you).figure,
+    6,
+  );
+  b.send({ type: "figure", figure: 9 });
+  assert.match((await b.get("error")).message, /начала/);
   assert.equal(started.room.game.decks, undefined);
   const current =
       started.room.game.players[started.room.game.turn].id === first.you
