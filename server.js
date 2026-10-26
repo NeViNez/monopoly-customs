@@ -12,7 +12,8 @@ export async function createServer({
   persist = true,
 } = {}) {
   const rooms = new Map(),
-    clients = new Map();
+    clients = new Map(),
+    autoplayTimers = new Map();
   let saveChain = Promise.resolve();
   if (persist) {
     await mkdir(dataDir, { recursive: true });
@@ -78,6 +79,8 @@ export async function createServer({
     }
   };
   const autoplay = (r) => {
+    clearTimeout(autoplayTimers.get(r.code));
+    autoplayTimers.delete(r.code);
     for (let step = 0; step < 20; step++) {
       const g = r.game;
       if (!g || g.winner) return;
@@ -121,6 +124,11 @@ export async function createServer({
       r.game = draft;
       if (action.type === "end" || action.type === "bankrupt") continue;
     }
+    autoplayTimers.set(r.code, setTimeout(() => {
+      autoplay(r);
+      save();
+      broadcast();
+    }, 1000));
   };
   const root = fileURLToPath(new URL("./public/", import.meta.url));
   const server = http.createServer(async (req, res) => {
@@ -240,6 +248,8 @@ export async function createServer({
             }
           }
           clients.set(ws, { code: r.code, id: p.id });
+          autoplay(r);
+          save();
           broadcast();
           return;
         }
@@ -365,6 +375,7 @@ export async function createServer({
     rooms,
     async close() {
       clearInterval(heartbeat);
+      for (const timer of autoplayTimers.values()) clearTimeout(timer);
       for (const ws of wss.clients) ws.terminate();
       await new Promise((r) => wss.close(r));
       if (server.listening) await new Promise((r) => server.close(r));

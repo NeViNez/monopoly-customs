@@ -80,12 +80,27 @@ test("autoplay completes purchases and keeps playing later turns without togglin
   assert.equal(second.pending, null);
   assert.equal(second.players[0].autoplay, true);
 
+  // Two autopilots must continue after the server's per-batch action limit.
+  for (const p of room.game.players) p.money = 100000;
+  b.send({ type: "autoplay", enabled: true });
+  const batch = (await a.get("room", (m) => m.room.game?.players[1].autoplay))
+    .room.game;
+  const continued = (
+    await a.get("room", (m) => m.room.game?.rollCount > batch.rollCount)
+  ).room.game;
+  assert.ok(continued.rollCount > batch.rollCount);
+
+  a.send({ type: "autoplay", enabled: false });
+  b.send({ type: "autoplay", enabled: false });
+  const stopped = (
+    await a.get("room", (m) => m.room.game?.players.every((p) => !p.autoplay))
+  ).room.game;
   await app.close();
   const [saved] = JSON.parse(
     await readFile(join(dataDir, "rooms.json"), "utf8"),
   );
   const { decks, ...savedGame } = saved.game;
-  assert.deepEqual(savedGame, second);
+  assert.deepEqual(savedGame, stopped);
 });
 
 test("two clients share game, reject forged turns, reconnect and restore after restart", async (t) => {
