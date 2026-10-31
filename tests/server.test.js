@@ -182,3 +182,105 @@ test("two clients share game, reject forged turns, reconnect and restore after r
     404,
   );
 });
+
+test("player figure images are served as PNG", async (t) => {
+  const app = await createServer({ persist: false });
+  t.after(() => app.close());
+  await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
+  const { figures } = await import("../lib/figures.js");
+  for (const figure of figures) {
+    const response = await fetch(
+      `http://127.0.0.1:${app.server.address().port}${figure.image}`,
+    );
+    assert.equal(response.status, 200, figure.name);
+    assert.equal(response.headers.get("content-type"), "image/png");
+  }
+});
+
+test("Elite party persists an open Fortuna, hides deck order and resumes without charging twice", async (t) => {
+  const dataDir = await mkdtemp(join(tmpdir(), "monopoly-elite-"));
+  let app = await createServer({ dataDir });
+  await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+  let a = await client(app.server.address().port),
+    b = await client(app.server.address().port);
+  t.after(async () => {
+    await app.close();
+    await rm(dataDir, { recursive: true, force: true });
+  });
+  a.send({ type: "create", name: "Аня" });
+  const session = await a.get("session");
+  const first = await a.get("room");
+  b.send({ type: "join", name: "Борис", code: first.room.code });
+  await b.get("session");
+  await b.get("room");
+  a.send({ type: "start" });
+  const started = await a.get("room", (m) => !!m.room.game);
+  assert.equal(started.room.game.rules, "elite");
+  assert.equal(started.room.game.decks, undefined);
+  const r = app.rooms.get(first.room.code);
+  r.game = createGame(
+    r.players.map(({ token, ...p }) => p),
+    { rules: "elite", shuffle: false },
+  );
+  const host = r.game.players[0].id;
+  r.game.players[0].position = 11;
+  r.game.players[0].shares = 2;
+  r.game.players[1].shares = 1;
+  r.game.market.available = 45;
+  r.game.properties[21].owner = r.game.players[1].id;
+  r.game.decks.fortune = [4];
+  act(r.game, host, { type: "roll" }, () => [1, 2]);
+  a.send({ type: "chat", text: "Сохранить карту" });
+  const opened = await a.get(
+    "room",
+    (m) => m.room.game?.event?.deck === "fortune",
+  );
+  assert.equal(opened.room.game.quotes[21].rent, 50);
+  b.send({
+    type: "action",
+    action: { type: "ackEvent", eventId: opened.room.game.event.id },
+  });
+  await b.get("error");
+  await app.close();
+  app = await createServer({ dataDir });
+  await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
+  a = await client(app.server.address().port);
+  a.send({ type: "resume", code: session.code, token: session.token });
+  const restored = await a.get("room");
+  assert.equal(restored.room.game.fortune.cardId, "C1R5");
+  assert.equal(restored.room.game.players[0].money, 1900);
+  a.send({
+    type: "action",
+    action: { type: "ackEvent", eventId: restored.room.game.event.id },
+  });
+  const accepted = await a.get("room", (m) => m.room.game.event === null);
+  assert.equal(accepted.room.game.players[0].money, 1900);
+  assert.equal(accepted.room.game.fortune.cardId, "C1R5");
+});
+
+test("Elite autoplay leaves one roll visible and chat does not bypass the movement delay", async (t) => {
+  const app = await createServer({ persist: false });
+  await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+  t.after(() => app.close());
+  const a = await client(app.server.address().port),
+    b = await client(app.server.address().port);
+  a.send({ type: "create", name: "Аня" });
+  await a.get("session");
+  const first = await a.get("room");
+  b.send({ type: "join", name: "Борис", code: first.room.code });
+  await b.get("session");
+  await b.get("room");
+  const r = app.rooms.get(first.room.code);
+  r.game = createGame(
+    r.players.map(({ token, ...p }) => p),
+    { rules: "elite", shuffle: false },
+  );
+  a.send({ type: "autoplay", enabled: true });
+  const rolled = await a.get("room", (m) => m.room.game?.rollCount === 1);
+  a.send({ type: "chat", text: "Не ускорять анимацию" });
+  const afterChat = await a.get("room", (m) =>
+    m.room.chat.some((x) => x.text === "Не ускорять анимацию"),
+  );
+  assert.equal(afterChat.room.game.rollCount, 1);
+  assert.deepEqual(afterChat.room.game.movement, rolled.room.game.movement);
+});

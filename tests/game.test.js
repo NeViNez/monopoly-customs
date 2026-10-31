@@ -46,6 +46,7 @@ test("monopoly doubles bare rent; mortgaged property charges nothing", () => {
   const g = game();
   g.properties[1].owner = "a";
   g.properties[3].owner = "a";
+  g.properties[2].owner = "a";
   assert.equal(rent(g, 1, 7), 4);
   g.properties[1].mortgaged = true;
   assert.equal(rent(g, 1, 7), 0);
@@ -55,6 +56,7 @@ test("building requires complete group and even development", () => {
   g.properties[1].owner = "a";
   assert.throws(() => act(g, "a", { type: "build", index: 1 }));
   g.properties[3].owner = "a";
+  g.properties[2].owner = "a";
   act(g, "a", { type: "build", index: 1 });
   assert.equal(g.bank.houses, 31);
   assert.throws(() => act(g, "a", { type: "build", index: 1 }));
@@ -132,7 +134,7 @@ test("new owner may keep mortgage then pay interest again on later redemption", 
 });
 test("last building offers other eligible players a competing purchase", () => {
   const g = game();
-  for (const i of [1, 3]) g.properties[i].owner = "a";
+  for (const i of [1, 2, 3]) g.properties[i].owner = "a";
   for (const i of [6, 8, 9]) g.properties[i].owner = "b";
   g.bank.houses = 1;
   act(g, "a", { type: "build", index: 1 });
@@ -149,7 +151,7 @@ test("last building offers other eligible players a competing purchase", () => {
 });
 test("uncontested last building costs normal price", () => {
   const g = game();
-  for (const i of [1, 3]) g.properties[i].owner = "a";
+  for (const i of [1, 2, 3]) g.properties[i].owner = "a";
   for (const i of [6, 8, 9]) g.properties[i].owner = "b";
   g.bank.houses = 1;
   act(g, "a", { type: "build", index: 1 });
@@ -194,6 +196,7 @@ test("bankruptcy of birthday payer does not consume active player turn or extra 
   );
   g.decks.chest = [8, ...g.decks.chest.filter((i) => i !== 8)];
   g.players[1].money = 0;
+  g.players[0].position = 15;
   act(g, "a", { type: "roll" }, () => [1, 1]);
   assert.equal(g.pending.from, "b");
   act(g, "b", { type: "bankrupt" });
@@ -234,14 +237,14 @@ test("all 32 cards resolve and preserve deck size unless held", () => {
 });
 test("hotel conversion returns four houses; sale returns hotel and takes four houses", () => {
   const g = game();
-  for (const i of [1, 3])
+  for (const i of [1, 2, 3])
     g.properties[i] = { owner: "a", level: 4, mortgaged: false };
-  g.bank.houses = 24;
+  g.bank.houses = 20;
   act(g, "a", { type: "build", index: 1 });
-  assert.equal(g.bank.houses, 28);
+  assert.equal(g.bank.houses, 24);
   assert.equal(g.bank.hotels, 11);
   act(g, "a", { type: "sell", index: 1 });
-  assert.equal(g.bank.houses, 24);
+  assert.equal(g.bank.houses, 20);
   assert.equal(g.bank.hotels, 12);
   assert.equal(g.players[0].money, 1475);
 });

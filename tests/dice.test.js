@@ -26,6 +26,8 @@ test("dice animate on a new roll, never on reconnect, chat or rematch", () => {
   let now = 1000;
   const element = { addEventListener() {} };
   const context = vm.createContext({
+    eliteBoard: [],
+    classicBoard: [],
     document: { querySelector: () => element },
     sessionStorage: { getItem: () => null, setItem() {} },
     localStorage: { getItem: () => null, setItem() {} },

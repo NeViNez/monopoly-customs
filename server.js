@@ -4,7 +4,7 @@ import { resolve, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomBytes, randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { createGame, act, board } from "./lib/game.js";
+import { createGame, act, gameBoard, rent, propertyTax } from "./lib/game.js";
 import { figures } from "./lib/figures.js";
 
 export async function createServer({
@@ -13,15 +13,25 @@ export async function createServer({
 } = {}) {
   const rooms = new Map(),
     clients = new Map(),
-    autoplayTimers = new Map();
+    autoplayTimers = new Map(),
+    autoplayWaitUntil = new Map();
   let saveChain = Promise.resolve();
   if (persist) {
     await mkdir(dataDir, { recursive: true });
     try {
       for (const r of JSON.parse(
         await readFile(resolve(dataDir, "rooms.json"), "utf8"),
-      ))
+      )) {
+        if (r.game) {
+          for (const cell of gameBoard(r.game).filter((cell) => cell.price))
+            r.game.properties[cell.index] ??= {
+              owner: null,
+              level: 0,
+              mortgaged: false,
+            };
+        }
         rooms.set(r.code, r);
+      }
     } catch (e) {
       if (e.code !== "ENOENT") throw e;
     }
@@ -56,7 +66,31 @@ export async function createServer({
       ...p,
       online: online(r.code, p.id),
     })),
-    game: r.game ? { ...r.game, decks: undefined } : null,
+    game: r.game
+      ? {
+          ...r.game,
+          decks: undefined,
+          ...(r.game.rules === "elite"
+            ? {
+                quotes: Object.fromEntries(
+                  gameBoard(r.game)
+                    .filter((b) => b.price)
+                    .map((b) => [
+                      b.index,
+                      {
+                        rent: rent(
+                          r.game,
+                          b.index,
+                          r.game.dice[0] + r.game.dice[1],
+                        ),
+                        tax: propertyTax(r.game, b.index),
+                      },
+                    ]),
+                ),
+              }
+            : {}),
+        }
+      : null,
     chat: r.chat,
   });
   const listing = () =>
@@ -78,57 +112,160 @@ export async function createServer({
       );
     }
   };
+  const scheduleAutoplay = (r, delay) => {
+    autoplayTimers.set(
+      r.code,
+      setTimeout(() => {
+        autoplay(r);
+        save();
+        broadcast();
+      }, delay),
+    );
+  };
   const autoplay = (r) => {
     clearTimeout(autoplayTimers.get(r.code));
     autoplayTimers.delete(r.code);
+    const wait = (autoplayWaitUntil.get(r.code) ?? 0) - Date.now();
+    if (wait > 0) {
+      scheduleAutoplay(r, wait);
+      return;
+    }
     for (let step = 0; step < 20; step++) {
       const g = r.game;
       if (!g || g.winner) return;
+      const board = gameBoard(g);
       const pending = g.pending;
-      let p = g.players[g.turn];
+      let p =
+        g.players.find(
+          (p) => p.id === (g.event?.player ?? pending?.player ?? pending?.from),
+        ) ?? g.players[g.turn];
       if (pending?.type === "auction" || pending?.type === "buildingAuction") {
-        p = g.players.find((x) => r.players.find((rp) => rp.id === x.id)?.autoplay &&
-          !x.bankrupt && !pending.passed.includes(x.id) && pending.leader !== x.id &&
-          (pending.type !== "buildingAuction" || pending.claims[x.id] !== undefined));
+        p = g.players.find(
+          (x) =>
+            r.players.find((rp) => rp.id === x.id)?.autoplay &&
+            !x.bankrupt &&
+            !pending.passed.includes(x.id) &&
+            pending.leader !== x.id &&
+            (pending.type !== "buildingAuction" ||
+              pending.claims[x.id] !== undefined),
+        );
         if (!p) return;
-      } else if (!r.players.find((x) => x.id === p.id)?.autoplay || p.bankrupt) return;
+      } else if (!r.players.find((x) => x.id === p.id)?.autoplay || p.bankrupt)
+        return;
       let action;
-      if (pending?.type === "purchase") action = p.money >= board[pending.index].price
-        ? { type: "buy" } : { type: "auction" };
+      if (g.event) {
+        p = g.players.find((x) => x.id === g.event.player);
+        if (!r.players.find((x) => x.id === p.id)?.autoplay) return;
+        action = { type: "ackEvent", eventId: g.event.id };
+      } else if (pending?.type === "casino") action = { type: "casinoSkip" };
+      else if (pending?.type === "insurance")
+        action = { type: "insuranceUse", policy: pending.policies[0] };
+      else if (pending?.type === "exchange")
+        action =
+          pending.stage === "before"
+            ? { type: "exchangeRoll", points: 0 }
+            : { type: "exchangeFinish" };
+      else if (pending?.type === "randomAuction")
+        action = { type: "randomAuction" };
+      else if (pending?.type === "chanceChoice")
+        action = { type: "chanceChoose", index: pending.choices[0] };
+      else if (
+        ["fortuneSale", "fortuneLoss", "fortuneAuction"].includes(pending?.type)
+      )
+        action = {
+          type: "fortuneAccept",
+          count: p.shares,
+          index: pending.choices?.[0],
+        };
+      else if (pending?.type === "auctionInsurance")
+        action = { type: "auctionAccept" };
+      else if (pending?.type === "purchase")
+        action =
+          p.money >= board[pending.index].price
+            ? { type: "buy" }
+            : { type: "auction" };
       else if (pending?.type === "mortgageTransfer" && pending.player === p.id)
         action = { type: "mortgageChoice", redeem: false };
-      else if (pending?.type === "buildingRequest" && pending.waiting.includes(p.id))
+      else if (
+        pending?.type === "buildingRequest" &&
+        pending.waiting.includes(p.id)
+      )
         action = { type: "buildingDecline" };
-      else if (pending?.type === "auction" || pending?.type === "buildingAuction") {
+      else if (
+        pending?.type === "auction" ||
+        pending?.type === "buildingAuction"
+      ) {
         if (pending.passed.includes(p.id) || pending.leader === p.id) return;
-        const limit = pending.type === "auction" ? board[pending.index].price : 0;
+        const limit =
+          pending.type === "auction" ? board[pending.index].price : 0;
         const bid = Math.max(10, pending.bid + 1);
-        action = pending.type === "buildingAuction" || bid > limit || bid > p.money
-          ? { type: "pass" } : { type: "bid", amount: bid };
+        action =
+          pending.type === "buildingAuction" || bid > limit || bid > p.money
+            ? { type: "pass" }
+            : { type: "bid", amount: bid };
       } else if (pending?.type === "debt" && pending.from === p.id) {
-        const gOwned = board.filter((b) => b.price && g.properties[b.index]?.owner === p.id);
-        const group = (b) => board.filter((x) => x.type === "street" && x.group === b.group);
-        const sale = gOwned.find((b) => b.type === "street" && group(b).some((x) => g.properties[x.index].level > 0) && group(b).every((x) => g.properties[x.index].owner === p.id && !g.properties[x.index].mortgaged));
+        const gOwned = board.filter(
+          (b) => b.price && g.properties[b.index]?.owner === p.id,
+        );
+        const group = (b) =>
+          board.filter((x) => x.type === "street" && x.group === b.group);
+        const sale = gOwned.find(
+          (b) =>
+            b.type === "street" &&
+            group(b).some((x) => g.properties[x.index].level > 0) &&
+            group(b).every(
+              (x) =>
+                g.properties[x.index].owner === p.id &&
+                !g.properties[x.index].mortgaged,
+            ),
+        );
         const mortgage = gOwned.find((b) => {
           const peers = b.type === "street" ? group(b) : [b];
-          return !g.properties[b.index].mortgaged && peers.every((x) => g.properties[x.index].level === 0);
+          return (
+            !g.properties[b.index].mortgaged &&
+            peers.every((x) => g.properties[x.index].level === 0)
+          );
         });
-        action = sale ? { type: "sellGroup", index: sale.index }
-          : mortgage ? { type: "mortgage", index: mortgage.index } : { type: "bankrupt" };
+        action =
+          g.rules === "elite" && p.shares > 0
+            ? { type: "shareSell", count: p.shares }
+            : sale
+              ? { type: "sellGroup", index: sale.index }
+              : mortgage
+                ? { type: "mortgage", index: mortgage.index }
+                : { type: "bankrupt" };
       } else if (pending) return;
       else if (g.phase === "roll") action = { type: "roll" };
       else if (g.phase === "end") action = { type: "end" };
       else return;
       const draft = structuredClone(g);
-      try { act(draft, p.id, action); } catch { return; }
+      try {
+        act(draft, p.id, action);
+      } catch {
+        return;
+      }
       r.game = draft;
+      if (
+        draft.rules === "elite" &&
+        ["roll", "ackEvent"].includes(action.type)
+      ) {
+        const steps = Math.max(
+          0,
+          ...Object.values(draft.movement?.paths || {}).map(
+            (path) => path.length - 1,
+          ),
+        );
+        const delay =
+          action.type === "roll"
+            ? 1400 + steps * 360 + (draft.event ? 3000 : 250)
+            : 500;
+        autoplayWaitUntil.set(r.code, Date.now() + delay);
+        scheduleAutoplay(r, delay);
+        return;
+      }
       if (action.type === "end" || action.type === "bankrupt") continue;
     }
-    autoplayTimers.set(r.code, setTimeout(() => {
-      autoplay(r);
-      save();
-      broadcast();
-    }, 1000));
+    scheduleAutoplay(r, 1000);
   };
   const root = fileURLToPath(new URL("./public/", import.meta.url));
   const server = http.createServer(async (req, res) => {
@@ -171,6 +308,7 @@ export async function createServer({
           ".js": "text/javascript; charset=utf-8",
           ".svg": "image/svg+xml",
           ".jpg": "image/jpeg",
+          ".png": "image/png",
         }[extname(file)],
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff",
@@ -320,7 +458,10 @@ export async function createServer({
           if (r.host !== c.id)
             throw Error("Начать игру может создатель комнаты");
           if (r.game) throw Error("Игра уже началась");
-          r.game = createGame(r.players.map(({ token, ...p }) => p));
+          r.game = createGame(
+            r.players.map(({ token, ...p }) => p),
+            { rules: "elite" },
+          );
         } else if (m.type === "rematch") {
           if (r.host !== c.id || !r.game?.winner)
             throw Error("Реванш доступен создателю после завершения игры");

@@ -43,3 +43,21 @@ test("initial render, unchanged positions and reduced motion do not animate", ()
   animatePieces(root(target), capturePieces(root(piece("a", 0, 0))), true);
   assert.equal(target.animation, undefined);
 });
+
+test("route animation visits every cell through a corner before final landing", async () => {
+  const { hopFrames } = await import("../public/pieces.js");
+  const points = [
+    { x: 100, y: 100 },
+    { x: 50, y: 100 },
+    { x: 0, y: 100 },
+    { x: 0, y: 50 },
+  ];
+  const { frames, duration } = hopFrames(points, false);
+  assert.equal(duration, 1400 + 3 * 360);
+  assert.equal(frames[0].transform, "translate(100px, 50px)");
+  assert.ok(frames.some((f) => f.transform === "translate(0px, 50px)"));
+  assert.equal(frames.at(-1).transform, "translate(0px, 0px)");
+  const reduced = hopFrames(points, true);
+  assert.ok(reduced.duration < duration);
+  assert.ok(reduced.frames.every((f) => !f.transform.includes("scale")));
+});

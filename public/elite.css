@@ -154,7 +154,7 @@ select:focus {
 .board-center {
   isolation: isolate;
   border-color: #1c4834;
-  background: radial-gradient(ellipse at 50% 5%, #2f5960, #102d3b 65%, #0a232b);
+  background: radial-gradient(ellipse at 50% 5%, #245998, #123c78 65%, #092955);
   color: #f6f2df;
 }
 .board-center:before {
@@ -190,7 +190,7 @@ select:focus {
     900 6.7cqw/0.95 Arial,
     sans-serif;
   letter-spacing: -0.35cqw;
-  color: #fff7e7;
+  color: #e33b3f;
   text-shadow:
     0.25cqw 0.35cqw 0 #a42e3a,
     0.4cqw 0.5cqw 0 #641c2d;
@@ -446,4 +446,291 @@ dialog::backdrop {
     font-size: 9px;
     gap: 10px;
   }
+}
+
+.cell.street {
+  background: #fff;
+  color: #000;
+}
+.cell.street .cell-price {
+  color: #000;
+}
+.cell.street:hover,
+.cell.street.selected {
+  background: #fff;
+}
+
+/* Revision 0.8: gold foil, yellow dividers and a readable mortgage state. */
+.board {
+  border-color: #d4af37;
+  background: #f4ce34;
+}
+.board-center {
+  border-color: #f4ce34;
+}
+.board-logo,
+.board-logo i {
+  color: #d4af37;
+  text-shadow:
+    0 0.2cqw 0 #80500c,
+    0 0.45cqw 0.35cqw #03152c99;
+}
+.board-logo span,
+.board-logo i span {
+  background:
+    repeating-linear-gradient(
+      115deg,
+      #ffffff00 0 1px,
+      #fff1b833 1px 2px,
+      #80500c22 2px 3px
+    ),
+    linear-gradient(
+      175deg,
+      #80500c 0%,
+      #e7c45c 17%,
+      #fff1b8 28%,
+      #ba861e 41%,
+      #fff1b8 50%,
+      #d4af37 66%,
+      #80500c 82%,
+      #fff1b8 100%
+    );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0.18cqw 0 #80500c)
+    drop-shadow(0 0.3cqw 0.25cqw #03152c99);
+}
+.cell {
+  border-color: #f4ce34;
+}
+.cell.mortgaged,
+.cell.mortgaged:hover,
+.cell.mortgaged.selected {
+  background: linear-gradient(#dce0e6bf, #dce0e6bf), #fff;
+  color: #000;
+}
+.cell.mortgaged .cell-name,
+.cell.mortgaged .cell-price {
+  color: #000;
+}
+.cell.mortgaged .color-band {
+  opacity: 0.3;
+}
+.cell-number {
+  position: absolute;
+  top: 0.3cqw;
+  right: 0.4cqw;
+  font-size: 0.8cqw;
+  color: #000;
+  z-index: 1;
+}
+.cell.mortgaged .cell-number {
+  color: #000;
+}
+.cell.fortune {
+  background: #dce5f5;
+}
+.cell.fortune .cell-symbol {
+  color: #12326b;
+  font-family: Georgia, serif;
+  font-weight: 800;
+  font-size: 3.4cqw;
+}
+.deck.fortune {
+  background: #12326b;
+  border-color: #d4af37;
+  color: #fff1b8;
+}
+.movement-status {
+  font-size: 1.6cqw;
+  color: #fff1b8;
+  min-height: 1.5em;
+  margin-top: 1cqw;
+}
+.fortune-panel {
+  padding: 16px;
+  border: 1px solid #d4af37;
+  background: #fafcff;
+  color: #12326b;
+  border-radius: 4px;
+}
+.fortune-panel p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.event-dialog {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  width: min(390px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 30px;
+  color: #12326b;
+  background: #fafcff;
+  border: 1px solid #d4af37;
+  border-radius: 14px;
+  box-shadow:
+    0 20px 60px #03152c66,
+    inset 0 0 0 5px #fff,
+    inset 0 0 0 6px #d4af3740;
+}
+.event-dialog::backdrop {
+  background: #03152c88;
+  backdrop-filter: blur(2px);
+  animation: field-dim 180ms both;
+}
+.event-dialog[open] {
+  animation: event-reveal 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.event-dialog.closing {
+  animation: event-dismiss 220ms ease both;
+}
+.event-dialog h2 {
+  margin: 8px 0 16px;
+  color: #12326b;
+  font:
+    700 27px/1.1 Georgia,
+    serif;
+}
+.event-dialog p {
+  line-height: 1.55;
+  font-size: 15px;
+}
+.event-dialog .event-icon {
+  display: block;
+  font:
+    700 48px Georgia,
+    serif;
+  color: #12326b;
+}
+.event-dialog.chance .event-icon {
+  color: #ad7724;
+}
+.event-dialog .event-term {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94702b;
+}
+.event-dialog .event-effect {
+  border-top: 1px solid #d4af3740;
+  padding-top: 12px;
+}
+.event-dialog .primary {
+  min-height: 44px;
+  width: 100%;
+  margin-top: 12px;
+}
+@keyframes field-dim {
+  from {
+    background: #03152c00;
+  }
+}
+@keyframes event-reveal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -42%) perspective(900px) rotateY(-90deg)
+      scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) perspective(900px) rotateY(0) scale(1);
+  }
+}
+@keyframes event-dismiss {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -56%) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-dialog[open],
+  .event-dialog.closing {
+    animation: field-dim 120ms both;
+  }
+}
+@media (max-width: 480px) {
+  .event-dialog {
+    padding: 22px;
+  }
+  .event-dialog h2 {
+    font-size: 24px;
+  }
+}
+.casino-machine {
+  padding: 10px;
+  border: 1px solid #d4af37;
+  border-radius: 8px;
+  background: #102851;
+}
+.casino-reels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.casino-reel {
+  height: 76px;
+  overflow: hidden;
+  background: #fff4df;
+  border-radius: 4px;
+  box-shadow: inset 0 8px 14px #57381c44;
+}
+.casino-strip {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-380px);
+  animation: casino-spin var(--reel-time) cubic-bezier(0.1, 0.7, 0.1, 1) both;
+}
+.casino-strip svg {
+  display: block;
+  height: 76px;
+  width: 100%;
+  flex: 0 0 76px;
+}
+.casino-dice {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 8px;
+  color: #fff1b8;
+}
+.casino-outcome {
+  min-height: 110px;
+  opacity: 0;
+  transition: opacity 180ms;
+}
+.casino-finished .casino-outcome {
+  opacity: 1;
+}
+@keyframes casino-spin {
+  from {
+    transform: translateY(0);
+    filter: blur(2px);
+  }
+  to {
+    transform: translateY(-380px);
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .casino-strip {
+    animation: none;
+  }
+}
+.finance-panel .policy-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.finance-panel button {
+  min-height: 44px;
+}
+.action-card > .secondary,
+.action-card > .primary {
+  margin-bottom: 8px;
 }

@@ -9,7 +9,8 @@ import { createGame } from "../lib/game.js";
 test("jail cell separates inmates and visitors, including release without moving", () => {
   const element = { addEventListener() {} };
   const context = vm.createContext({
-    board,
+    classicBoard: board,
+    eliteBoard: board,
     figures,
     document: { querySelector: () => element },
     sessionStorage: { getItem: () => null },
