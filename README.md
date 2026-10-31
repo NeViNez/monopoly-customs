@@ -88,4 +88,4 @@ npm test
 
 Создайте на сервере `deploy/monopoly.htpasswd` командой `htpasswd -c deploy/monopoly.htpasswd testMonopoly` и введите пароль интерактивно. Файл исключён из Git. Запуск: `docker compose -f compose.production.yaml up -d --build`. nginx публикуется на порту 34291 и проверяет Basic Auth для всех запросов, включая WebSocket; порт Node наружу не публикуется. Данные хранятся в Docker volume. Проброс TCP 34291 на роутере должен вести на порт 34291 сервера.
 
-Этот вариант использует HTTP: Basic Auth не шифрует пароль. Для шифрования соединения настройте TLS на nginx или используйте защищённый VPN.
+Этот вариант использует HTTPS: `https://monopoly.nebunezzariii.ru:34291`. В контейнер только для чтения подключены каталоги существующего wildcard-сертификата Let’s Encrypt на сервере. После обновления сертификата выполните `docker compose -f compose.production.yaml exec -T nginx nginx -s reload` (либо вызывайте команду из deploy-hook Certbot).
