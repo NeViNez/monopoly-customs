@@ -4,3 +4,5 @@ test-results/
 .env
 *.log
 artifacts/
+# Server-only Basic Auth credentials
+deploy/*.htpasswd

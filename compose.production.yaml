@@ -1,0 +1,21 @@
+services:
+  monopoly:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - monopoly-data:/app/data
+    environment:
+      NODE_ENV: production
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "34291:80"
+    volumes:
+      - ./deploy/nginx-production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/monopoly.htpasswd:/etc/nginx/monopoly.htpasswd:ro
+    depends_on:
+      monopoly:
+        condition: service_healthy
+volumes:
+  monopoly-data:
